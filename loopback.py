@@ -2,8 +2,9 @@ import numpy as np
 import sounddevice as sd
 import pygame
 import colorsys
-from MusicalData import musicalData
-from GeometricObjects.spiral import Spiral
+from musical_data import musicalData
+from waveform import Waveform 
+
 
 animation_phase = 0.0
 smoothing_factor = 0.05
@@ -13,19 +14,19 @@ DEVICE_INDEX = 10  # Your Stereo Mix device
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
 
-spirals = list()
+waves = Waveform(500)
 
 iradius = 200
 ithickness = 2
-radband = 60
-thickband = 20
+radband = 80
+thickband = 50
 
 midmax =1e-10
 bassmax =1e-10
 trebmax =1e-10
 # === Pygame Setup ===
 pygame.init()
-WIDTH, HEIGHT = 1000, 1000
+WIDTH, HEIGHT = 800, 800
 SENSITIVITY = 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Real-Time Music Visualizer")
@@ -38,11 +39,7 @@ md = musicalData(BLOCKSIZE)
 
 num_points = 500
 
-dots = np.linspace(0, 2 * np.pi, num_points)
-base_waveform = np.array([
-    [np.sin(7 * t), np.cos(5 * t + np.pi / 2)]
-    for t in dots
-])
+
 
 def audio_callback(indata, frames, time, status):
     global md
@@ -70,18 +67,6 @@ def frequency_to_hue(freq, min_freq=50, max_freq=4000):
     hue = (freq - min_freq) / (max_freq - min_freq)  # Range: 0.0 to 1.0
     r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
     return int(r * 255), int(g * 255), int(b * 255)
-
-def draw_spiral(surface, center, time_value, color, a=0, b=2, num_points=400, rotation_speed=1.0):
-    points = []
-    max_theta = 6 * np.pi
-    for i in range(num_points):
-        theta = i * (max_theta / num_points)
-        r = a + b * theta
-        x = r * np.cos(theta + time_value * rotation_speed)
-        y = r * np.sin(theta + time_value * rotation_speed)
-        points.append((center[0] + x, center[1] + y))
-    if len(points) > 1:
-        pygame.draw.lines(surface, color, False, points, 2)
 
 def rotate_points(points, theta, p):
     """
@@ -142,7 +127,7 @@ def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n):
     center = np.array(center)
 
     for r in trange:
-        col = rotate_rgb(color, r * 10)
+        col = rotate_rgb(color, r * 3)
 
         # Scale base waveform
         points = (base_waveform * r + center)[:n]
@@ -153,23 +138,6 @@ def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n):
         # Draw
         pygame.draw.lines(surface, col, False, points, 2)
 
-
-def draw_knot(surface,center,color,rad,theta,thickness,num_points=500):
-    trange = np.linspace(rad-thickness//2, rad+thickness//2, thickness)
-    for r in trange:
-        points = []
-        col = rotate_rgb( color, r*10)
-        dots = np.linspace(0, 2 * np.pi, num_points)
-        for t in dots:
-            x = np.sin(7 * t)*r
-            y = ( np.cos(5 * t+np.pi/2))*r      
-            points.append((center[0] + x, center[1] + y))
-
-        if len(points) > 1:
-            points2 = rotate_points(points, theta, center)
-            pygame.draw.lines(surface, col, False, points2, 2)
-        
-   
 
 
 
@@ -193,9 +161,7 @@ while running:
 
     # Clear screen
     screen.fill((15, 15, 40))
-    
-   
-   
+
     circle_color = frequency_to_hue(dominant_freq)
 
     bass = get_band_energy(md.fft_magnitude, 1, 10)
@@ -212,24 +178,24 @@ while running:
     mids = mids / midmax
     treble = treble / trebmax
     
-    animation_speed = 0.05 + 0.02 * mids  # adjust constants to taste
+    animation_speed =  rotation_speed = dominant_freq / 10000  # adjust constants to taste
     animation_phase += animation_speed
     t = animation_phase
     t2 = int(t*5) % num_points
 
     #print(f"t {t} bass {bass}- mids {mids} - treble {treble} dominant freq {dominant_freq} ")
     # You can plug in volume or dominant_freq to modulate!
-    rotation_speed = dominant_freq / 1000  # Higher pitch = faster spin
-    tightness = 1 + bass * 5               # Spiral tightens with bass
+     # Higher pitch = faster spin
+                 # Spiral tightens with bass
 
     knot_rad =  iradius+(bass*radband)
     theta = np.radians(t * 10)
     thickness = (int)(ithickness+(bass*thickband))
-    print(f"thickness {thickness} knot_rad {knot_rad} theta {theta}")
+    print(f"{t} thickness {thickness} knot_rad {knot_rad} theta {theta}")
    
 
     if t2>2:
-        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,base_waveform,t2)
+        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,waves.get_waveform('Celtic2'),t2)
 
     pygame.display.flip()
     clock.tick(60)
