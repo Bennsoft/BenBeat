@@ -3,27 +3,35 @@ import sounddevice as sd
 import pygame
 import colorsys
 from musical_data import musicalData
+from musical_values import MusicalValues
 from waveform import Waveform 
 
 
 animation_phase = 0.0
-smoothing_factor = 0.05
+# Smoothed values
+smoothed_freq = 0.0
+smoothed_bass = 0.0
+smoothed_mids = 0.0
+smoothed_treble = 0.0
+
+smoothing_alpha = 0.05
+dominant_freq = 0.0
+
 
 # === Audio Settings ===
 DEVICE_INDEX = 10  # Your Stereo Mix device
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
+looplock = False
 
 waves = Waveform(500)
+knotform = None
 
-iradius = 200
+iradius = 50
 ithickness = 2
-radband = 80
-thickband = 50
+radband = 500
+thickband = 100
 
-midmax =1e-10
-bassmax =1e-10
-trebmax =1e-10
 # === Pygame Setup ===
 pygame.init()
 WIDTH, HEIGHT = 800, 800
@@ -32,13 +40,14 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Real-Time Music Visualizer")
 clock = pygame.time.Clock()
 
+
 # === Audio Volume Holder ===
 volume = 0.0
-dominant_freq = 0.0
 md = musicalData(BLOCKSIZE)
 
 num_points = 500
-
+mv = MusicalValues()
+complete_loops = 0
 
 
 def audio_callback(indata, frames, time, status):
@@ -126,8 +135,9 @@ def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n):
     trange = np.linspace(rad - thickness // 2, rad + thickness // 2, thickness)
     center = np.array(center)
 
+    colrot=1
     for r in trange:
-        col = rotate_rgb(color, r * 3)
+        col = rotate_rgb(color, r * colrot)
 
         # Scale base waveform
         points = (base_waveform * r + center)[:n]
@@ -162,40 +172,56 @@ while running:
     # Clear screen
     screen.fill((15, 15, 40))
 
-    circle_color = frequency_to_hue(dominant_freq)
 
     bass = get_band_energy(md.fft_magnitude, 1, 10)
     mids = get_band_energy(md.fft_magnitude, 10, 100)
     treble = get_band_energy(md.fft_magnitude, 100, 1000)
-    if bass > bassmax:
-        bassmax = bass
-    if mids > midmax:
-        midmax = mids   
-    if treble > trebmax:
-        trebmax = treble
-    # Normalize values to 0-1 range 
-    bass = bass / bassmax
-    mids = mids / midmax
-    treble = treble / trebmax
+    mv.bass = bass
+    mv.mids = mids  
+    mv.treble = treble
+    mv.frequency = dominant_freq
     
-    animation_speed =  rotation_speed = dominant_freq / 10000  # adjust constants to taste
+    
+    smoothed_freq = (1 - smoothing_alpha) * smoothed_freq + smoothing_alpha * mv.frequency
+    smoothed_bass = (1 - smoothing_alpha) * smoothed_bass + smoothing_alpha * mv.bass
+    smoothed_mids = (1 - smoothing_alpha) * smoothed_mids + smoothing_alpha * mv.mids
+    smoothed_treble = (1 - smoothing_alpha) * smoothed_treble + smoothing_alpha * mv.treble
+
+    print(f"          freq{mv.frequency:.2f}  Hz, Bass: {mv.bass:.2f}, Mids: {mv.mids:.2f}, Treble: {mv.treble:.2f}")
+    print(f"Smoooooth freq{smoothed_freq:.2f} Hz, Bass: {smoothed_bass:.2f}, Mids: {smoothed_mids:.2f}, Treble: {smoothed_treble:.2f}")
+    circle_color = frequency_to_hue(smoothed_freq)
+
+    animation_speed =  smoothed_mids  # adjust constants to taste
     animation_phase += animation_speed
     t = animation_phase
-    t2 = int(t*5) % num_points
+    t2 = int(t) % num_points
 
-    #print(f"t {t} bass {bass}- mids {mids} - treble {treble} dominant freq {dominant_freq} ")
-    # You can plug in volume or dominant_freq to modulate!
-     # Higher pitch = faster spin
-                 # Spiral tightens with bass
+    if t2 == 0:
+        if looplock == False:
+            looplock = True
+            complete_loops += 1
+            pygame.display.set_caption(f"Real-Time Music Visualizer - Loops: {complete_loops}")
+            w1 = np.random.randint(0,waves.get_waveformCount()-1)
+            w2 = np.random.randint(0,waves.get_waveformCount()-1)
+            if (w1==w2):
+                knotform = waves.get_waveform_by_index(w1)
+            else:
+                blend = np.random.uniform(0,1)
+                name1 = waves.get_waveform_name(w1)
+                name2 = waves.get_waveform_name(w2)
+                knotform = waves.get_waveform_blend(name1,name2,blend)
 
-    knot_rad =  iradius+(bass*radband)
-    theta = np.radians(t * 10)
-    thickness = (int)(ithickness+(bass*thickband))
-    print(f"{t} thickness {thickness} knot_rad {knot_rad} theta {theta}")
-   
+    else:
+        looplock = False
 
+
+    knot_rad =  iradius+(smoothed_bass*radband)
+    theta = np.radians(t * 2)
+    thickness = (int)(ithickness+(smoothed_treble*thickband))
+    print(f"{t} {t2} knotrad {knot_rad} thickness: {thickness}")
+       
     if t2>2:
-        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,waves.get_waveform('Celtic2'),t2)
+        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,knotform,t2)
 
     pygame.display.flip()
     clock.tick(60)
