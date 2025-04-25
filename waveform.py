@@ -28,7 +28,36 @@ class Waveform:
             for t in self.__dots__
         ])
         self.__waveforms__['ellipse'] = ellipse
-        
+
+        Waveform = np.array([
+            [np.sin(5*t) - np.cos(2*t+np.pi), np.cos(t)+np.sin(3*t+np.pi/4)]
+            for t in self.__dots__
+        ])
+        self.__waveforms__['squiggle'] = Waveform
+
+        Waveform = np.array([
+            [t/3*(np.cos(t) + np.sin(2*t+np.pi/4))
+             ,t/3*(np.cos(2*t+np.pi/4) + np.sin(t))]
+            for t in self.__dots__
+        ])
+        self.__waveforms__['knot'] = Waveform
+        R=5
+        r=3
+        d=5
+        Waveform = np.array([
+            [(R-r)*np.cos(t)+d*np.cos(R-r)/r*t,
+             (R-r)*np.sin(t)-d*np.sin(R-r)/r*t]   
+            for t in self.__dots__        
+
+        ])
+        self.__waveforms__['hypotrochoid'] = Waveform
+
+        Waveform = np.array([
+            [t*np.cos(7*t),t*np.sin(7*t)]
+            for t in self.__dots__
+        ])
+        self.__waveforms__['spiral'] = Waveform
+    
 
     def get_waveform(self, name):
         if name in self.__waveforms__:

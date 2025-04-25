@@ -5,7 +5,7 @@ class Config:
     __thickness__ = 2
     __radband__ = 500
     __thickband__ = 100
-    __spins__ = 0
+    __spins__ = 3
 
     @property
     def points_num(self):

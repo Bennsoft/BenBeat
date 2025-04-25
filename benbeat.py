@@ -8,13 +8,14 @@ from musical_values import MusicalValues
 from waveform import Waveform 
 import colorsys
 from enum import Enum
+import math
 
 class State(Enum):
     TICKING = 0
     SPINNING = 1
   
 
-DEVICE_INDEX = 10  # Your Stereo Mix device
+DEVICE_INDEX = 17  # Your Stereo Mix device
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
 md = musicalData(BLOCKSIZE)
@@ -120,13 +121,26 @@ def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n):
         pygame.draw.lines(surface, col, False, points, 2)
 
 
+def unwrap_angle(angle_rad):
+    full_turn = 2 * math.pi
+    loops = int(angle_rad // full_turn)        # number of full 2π loops
+    current_angle = angle_rad % full_turn      # remainder within current loop
+    return loops, current_angle
+
+
+
+
 
 def main():
     config = Config()
     waves = Waveform(config.points_num)
     knotform = None
-    animation_phase = 0.0
-    spin_countdown = 0
+    tick_phase = 0
+    rotation_angle =0
+    tick_speed = 0
+    angular_speed = 0
+    rotation_target = 0
+    display_text = ""
 
     pygame.init()
     WIDTH, HEIGHT = 800, 800
@@ -134,11 +148,10 @@ def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Real-Time Music Visualizer")
     clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 24)  # None = default font, 36 = size
 
 
     # === Audio Volume Holder ===
-   
-    num_points = 500
     mv = MusicalValues()
     complete_loops = 0
 
@@ -181,53 +194,62 @@ def main():
         smoothed_mids = (1 - config.smoothing_alpha) * smoothed_mids + config.smoothing_alpha * mv.mids
         smoothed_treble = (1 - config.smoothing_alpha) * smoothed_treble + config.smoothing_alpha * mv.treble
 
-        print(f"          freq{mv.frequency:.2f}  Hz, Bass: {mv.bass:.2f}, Mids: {mv.mids:.2f}, Treble: {mv.treble:.2f}")
-        print(f"Smoooooth freq{smoothed_freq:.2f} Hz, Bass: {smoothed_bass:.2f}, Mids: {smoothed_mids:.2f}, Treble: {smoothed_treble:.2f}")
+  #      print(f"          freq{mv.frequency:.2f}  Hz, Bass: {mv.bass:.2f}, Mids: {mv.mids:.2f}, Treble: {mv.treble:.2f}")
+   #     print(f"Smoooooth freq{smoothed_freq:.2f} Hz, Bass: {smoothed_bass:.2f}, Mids: {smoothed_mids:.2f}, Treble: {smoothed_treble:.2f}")
         circle_color = frequency_to_hue(smoothed_freq)
 
-        t2 = int(animation_phase) 
+        t = int(tick_phase) % config.points_num
+        tick_speed =  smoothed_mids  # adjust constants to taste
+        tick_phase+=tick_speed
+        angular_speed = (smoothed_treble+smoothed_mids)*2
+        rotation_angle += angular_speed
 
+        knot_rad =  config.radius+(smoothed_bass*config.radband)
+        complete_loops,current_rad_angle = unwrap_angle(np.radians(rotation_angle))
+
+      
         if state == State.TICKING:
-            if t2 == 0:
-                 w1 = np.random.randint(0,waves.get_waveformCount()-1)
-                 w2 = np.random.randint(0,waves.get_waveformCount()-1)
-                 if (w1==w2):
-                    knotform = waves.get_waveform_by_index(w1)
+            if t == 0:
+                 r = np.random.randint(0,10)
+                 if (r>=5):
+                    w1 = np.random.randint(0,waves.get_waveformCount())
+                    w2 = np.random.randint(0,waves.get_waveformCount())
+                    if (w1==w2):
+                        knotform = waves.get_waveform_by_index(w1)
+                        display_text = waves.get_waveform_name(w1)
+                    else:
+                        blend = np.random.uniform(0,1)
+                        name1 = waves.get_waveform_name(w1)
+                        name2 = waves.get_waveform_name(w2)
+                        knotform = waves.get_waveform_blend(name1,name2,blend)
+                        display_text = f"{name1} --- {name2} -- {blend}"
                  else:
-                    blend = np.random.uniform(0,1)
-                    name1 = waves.get_waveform_name(w1)
-                    name2 = waves.get_waveform_name(w2)
-                    knotform = waves.get_waveform_blend(name1,name2,blend)
-
-            elif t2 == num_points-1:
-                #complete loop
-                complete_loops += 1
-                
+                    w1 = np.random.randint(0,waves.get_waveformCount())
+                    knotform = waves.get_waveform_by_index(w1)
+                    display_text = waves.get_waveform_name(w1)
+                 text = font.render(display_text, True, (255, 255, 255))
+                 text_rect = text.get_rect(topleft=(10, 10)) 
+            elif t == config.__points_num__-1:                
                 state = State.SPINNING
-                spin_countdown = config.spins
-                animation_phase = 0.0
-
+                rotation_target = rotation_angle + config.spins*360
         elif state == State.SPINNING:
-            if t2 == config.points_num-1:
-                # Spin complete
-                spin_countdown -= 1
-                animation_phase = 0.0 
-                complete_loops += 1  
-                if spin_countdown == 0:
+                if rotation_angle >= rotation_target:
                     state = State.TICKING
+                    tick_phase = 0
+
+            
+           
+
 
         pygame.display.set_caption(f"Real-Time Music Visualizer - Loops: {complete_loops}")              
-        animation_speed =  smoothed_mids  # adjust constants to taste
-        animation_phase += animation_speed
-        knot_rad =  config.radius+(smoothed_bass*config.radband)
-        theta = np.radians(animation_phase)
-        thickness = (int)(config.thickness+(smoothed_treble*config.thickband))
-        print(f"{t2} knotrad {knot_rad} thickness: {thickness}")
        
-        timeval = t2 if state == State.TICKING else num_points-1   
+        thickness = (int)(config.thickness+(smoothed_treble*config.thickband))
+       
+        timeval = t if state == State.TICKING else config.__points_num__-1   
         if timeval>2:
-            draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,knotform,timeval)
+            draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,current_rad_angle,thickness,knotform,timeval)
 
+        screen.blit(text,text_rect)
         pygame.display.flip()
         clock.tick(60)
 
