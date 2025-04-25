@@ -8,7 +8,11 @@ class MusicalValues:
     __frequency__ = 0
     __frequency_min__ = 0
     __frequency_max__ = 0
+    __smoothing_alpha__ = 0.1  # Smoothing factor for frequency
+    
 
+    def __init__(self, smoothing_alpha=0.1):
+        self.__smoothing_alpha__ = smoothing_alpha
 
     @property
     def bass(self):
@@ -56,4 +60,6 @@ class MusicalValues:
             self.__frequency_min__ = newval
     
     
+
     
+   

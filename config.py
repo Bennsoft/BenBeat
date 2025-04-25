@@ -1,10 +1,10 @@
 class Config:
     __points_num__ = 500
     __smoothing_alpha__ = 0.05
-    __radius__ = 50
-    __thickness__ = 2
-    __radband__ = 500
-    __thickband__ = 100
+    __radius__ = 10
+    __thickness__ = 1
+    __radband__ = 200
+    __thickband__ = 20
     __spins__ = 3
 
     @property
