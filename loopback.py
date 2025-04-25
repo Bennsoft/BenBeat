@@ -7,6 +7,7 @@ from musical_values import MusicalValues
 from waveform import Waveform 
 
 
+
 animation_phase = 0.0
 # Smoothed values
 smoothed_freq = 0.0
@@ -16,10 +17,14 @@ smoothed_treble = 0.0
 
 smoothing_alpha = 0.05
 dominant_freq = 0.0
+fullrotations = 3
+fullroationmode = False
+fullrotcountdown = fullrotations
 
 
 # === Audio Settings ===
-DEVICE_INDEX = 10  # Your Stereo Mix device
+#DEVICE_INDEX = 10  # Your Stereo Mix device GAMING LAPTOP
+DEVICE_INDEX = 29 #Work Laptop
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
 looplock = False
@@ -194,22 +199,37 @@ while running:
     animation_speed =  smoothed_mids  # adjust constants to taste
     animation_phase += animation_speed
     t = animation_phase
-    t2 = int(t) % num_points
+    t2 = int(t)
 
-    if t2 == 0:
+    if t2==num_points-1:
+        #complete loop
+        if fullroationmode:
+            fullrotcountdown -=1
+            if fullrotcountdown == 0:
+                fullroationmode = False
+                animation_phase = 0
+        else:
+            fullroationmode = True
+            fullrotcountdown = fullrotations
+
+    if t2 == 0:     
         if looplock == False:
             looplock = True
             complete_loops += 1
             pygame.display.set_caption(f"Real-Time Music Visualizer - Loops: {complete_loops}")
-            w1 = np.random.randint(0,waves.get_waveformCount()-1)
-            w2 = np.random.randint(0,waves.get_waveformCount()-1)
-            if (w1==w2):
-                knotform = waves.get_waveform_by_index(w1)
-            else:
-                blend = np.random.uniform(0,1)
-                name1 = waves.get_waveform_name(w1)
-                name2 = waves.get_waveform_name(w2)
-                knotform = waves.get_waveform_blend(name1,name2,blend)
+            if fullroationmode == False: 
+                fullroationmode = True
+                fullrotcountdown = fullrotations
+                w1 = np.random.randint(0,waves.get_waveformCount()-1)
+                w2 = np.random.randint(0,waves.get_waveformCount()-1)
+                if (w1==w2):
+                    knotform = waves.get_waveform_by_index(w1)
+                else:
+                    blend = np.random.uniform(0,1)
+                    name1 = waves.get_waveform_name(w1)
+                    name2 = waves.get_waveform_name(w2)
+                    knotform = waves.get_waveform_blend(name1,name2,blend)
+            
 
     else:
         looplock = False
@@ -220,8 +240,10 @@ while running:
     thickness = (int)(ithickness+(smoothed_treble*thickband))
     print(f"{t} {t2} knotrad {knot_rad} thickness: {thickness}")
        
-    if t2>2:
-        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,knotform,t2)
+    timeval = num_points if fullroationmode else t2
+
+    if timeval>2:
+        draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,theta,thickness,knotform,timeval)
 
     pygame.display.flip()
     clock.tick(60)

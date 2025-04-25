@@ -11,7 +11,7 @@ delta = np.pi / 2  # phase shift
 
 w = Waveform(1000)
 # Time array
-t = w.get_waveform('Celtic2')
+t = w.get_waveform('spiral')
 x = t[:, 0]
 y = t[:, 1]
 
