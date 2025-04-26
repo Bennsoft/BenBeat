@@ -1,3 +1,5 @@
+from data_cruncher import DataCruncher
+
 class MusicalValues:
     __bass__ = 0
     __mids__ = 0
@@ -8,7 +10,17 @@ class MusicalValues:
     __frequency__ = 0
     __frequency_min__ = 0
     __frequency_max__ = 0
+    __snapsize__ = 2000
+    __dc__ = None
 
+    __snapvalues__  = None
+    __store_data__ = False
+
+    def __init__(self,storeData):
+        if storeData:
+            self.__snapvalues__ = list()
+            self.__store_data__ = storeData
+            self.__dc__ = DataCruncher()
 
     @property
     def bass(self):
@@ -54,6 +66,30 @@ class MusicalValues:
             self.__frequency_max__ = newval
         if newval < self.__frequency_min__:
             self.__frequency_min__ = newval
+
+    def setvalues(self,bass,mid,treble,freq):
+        self.bass = bass
+        self.mids = mid
+        self.treble = treble
+        self.frequency = freq
+
+        if self.__store_data__:
+            self.__snapvalues__.append((bass,mid,treble,freq))
+            if len(self.__snapvalues__) == self.__snapsize__:
+                self.flush()
+
+    def flush(self):
+        self.__dc__.AddMultipleRows(self.__snapvalues__)
+        self.__snapvalues__.clear
+        
+    def save_dc(self,filename):
+        self.__dc__.Dataframe.to_csv(filename)
+        
+
+
+
+                
+    
     
     
     
