@@ -2,3 +2,4 @@ sounddevice
 numpy
 pygame
 matplotlib
+pandas

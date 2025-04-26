@@ -10,12 +10,13 @@ import colorsys
 from enum import Enum
 import math
 
+
 class State(Enum):
     TICKING = 0
     SPINNING = 1
   
 
-DEVICE_INDEX = 17  # Your Stereo Mix device
+DEVICE_INDEX = 10  # Your Stereo Mix device
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
 md = musicalData(BLOCKSIZE)
@@ -142,6 +143,7 @@ def main():
     rotation_target = 0
     display_text = ""
 
+    rowlist = list()
     pygame.init()
     WIDTH, HEIGHT = 800, 800
     SENSITIVITY = 700
@@ -152,7 +154,7 @@ def main():
 
 
     # === Audio Volume Holder ===
-    mv = MusicalValues()
+    mv = MusicalValues(True)
     complete_loops = 0
 
 
@@ -184,11 +186,10 @@ def main():
         bass = get_band_energy(md.fft_magnitude, 1, 10)
         mids = get_band_energy(md.fft_magnitude, 10, 100)
         treble = get_band_energy(md.fft_magnitude, 100, 1000)
-        mv.bass = bass
-        mv.mids = mids  
-        mv.treble = treble
-        mv.frequency = dominant_freq
-    
+
+        mv.setvalues(bass,mids,treble,dominant_freq)
+
+
         smoothed_freq = (1 - config.smoothing_alpha) * smoothed_freq + config.smoothing_alpha * mv.frequency
         smoothed_bass = (1 - config.smoothing_alpha) * smoothed_bass + config.smoothing_alpha * mv.bass
         smoothed_mids = (1 - config.smoothing_alpha) * smoothed_mids + config.smoothing_alpha * mv.mids
@@ -258,6 +259,8 @@ def main():
     stream.stop()
     stream.close()
     pygame.quit()
+    mv.flush()
+    mv.save_dc("Music.csv")
 
 
 
