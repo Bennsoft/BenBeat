@@ -9,7 +9,8 @@ class MusicalValues:
     __frequency_min__ = 0
     __frequency_max__ = 0
     __smoothing_alpha__ = 0.1  # Smoothing factor for frequency
-    
+    __frequency_lower_bound__ = 40
+    __frequency_upper_bound__ = 6000
 
     def __init__(self, smoothing_alpha=0.1):
         self.__smoothing_alpha__ = smoothing_alpha
@@ -53,11 +54,12 @@ class MusicalValues:
     
     @frequency.setter
     def frequency(self, newval):
-        self.__frequency__ = newval
-        if newval > self.__frequency_max__:
-            self.__frequency_max__ = newval
-        if newval < self.__frequency_min__:
-            self.__frequency_min__ = newval
+        if newval>=self.__frequency_lower_bound__ and newval <= self.__frequency_upper_bound__:
+            self.__frequency__ = newval
+            if newval > self.__frequency_max__:
+                self.__frequency_max__ = newval
+            if newval < self.__frequency_min__:
+                self.__frequency_min__ = newval
     
     
 

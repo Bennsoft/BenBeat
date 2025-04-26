@@ -148,9 +148,10 @@ def main():
     b=0
     c=0
     pulse_taget = 0
+    firstpass = False
 
     pygame.init()
-    WIDTH, HEIGHT = 800, 800
+    WIDTH, HEIGHT = 1000, 800
     SENSITIVITY = 700
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Real-Time Music Visualizer")
@@ -172,10 +173,10 @@ def main():
         device=DEVICE_INDEX
     )
     stream.start()
-    smoothed_freq = 0.0
-    smoothed_bass = 0.0
-    smoothed_mids = 0.0
-    smoothed_treble = 0.0
+    smoothed_freq = 0.5
+    smoothed_bass = 0.5
+    smoothed_mids = 0.5
+    smoothed_treble = 0.5
     
     state = State.TICKING
     # === Main Loop ===
@@ -208,21 +209,22 @@ def main():
             t = int(tick_phase) % config.points_num
             tick_speed =  smoothed_mids  # adjust constants to taste
             tick_phase+=tick_speed
-            angular_speed = (smoothed_treble+smoothed_mids)*2
+            angular_speed = smoothed_bass*2
             rotation_angle += angular_speed
 
-            knot_rad =  config.radius+(smoothed_bass*config.radband)
+            
             complete_loops,current_rad_angle = unwrap_angle(np.radians(rotation_angle))
-
+            if (state==State.TICKING or state == State.SPINNING):
+                knot_rad =  config.radius+(smoothed_bass*config.radband)
         
             if state == State.TICKING:
                 if t == 0:
                     wavepick = np.random.randint(0,waves.get_waveformCount())
                     numwave = waves.get_waveform_by_index(wavepick)
-                    display_text = waves.get_waveform_name(wavepick)
-                    a=np.random.uniform(1,math.pi*2)
-                    b=np.random.uniform(1,math.pi*2)
-                    c=np.random.uniform(1,math.pi*2)
+                    display_text = f" {waves.get_waveform_name(wavepick)} a {a} b {b} c{c}"
+                    a=numwave.get_a(np.random.uniform(0,1))
+                    b=numwave.get_b(np.random.uniform(0,1))
+                    c=numwave.get_c(np.random.uniform(0,1))
                     knotform = numwave.get_linspace(a,b,c)
                     text = font.render(display_text, True, (255, 255, 255))
                     text_rect = text.get_rect(topleft=(10, 10)) 
@@ -233,15 +235,16 @@ def main():
             elif state == State.SPINNING:
                     if rotation_angle >= rotation_target:
                         state = State.PULSE
-                        pulse_taget = pygame.time.get_ticks() + 10000
+                        pulse_taget = pygame.time.get_ticks() + 20000
 
             thickness = (int)(config.thickness+(smoothed_treble*config.thickband))
             timeval = t if state == State.TICKING else config.__points_num__-1   
             
 
         elif state == State.PULSE:                
-           a = smoothed_freq*50
-           b = smoothed_bass*math.pi/2
+           a =numwave.get_a(smoothed_freq)
+           b = numwave.get_b(smoothed_treble)
+           c = numwave.get_c(smoothed_mids)
            knotform = numwave.get_linspace(a,b,c)
            timeval = config.__points_num__-1
            current_time = pygame.time.get_ticks()
@@ -252,7 +255,7 @@ def main():
                 rotation_angle = 0
                 complete_loops = 0
            else:
-                display_text = f"Pulsing {pulse_taget - current_time} to go" 
+                display_text = f"Pulsing a {a} b {b} c {c}" 
                 text = font.render(display_text, True, (255, 255, 255))
                 text_rect = text.get_rect(topleft=(10, 10)) 
 

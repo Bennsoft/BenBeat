@@ -11,15 +11,28 @@ class Waveform:
         #self.__waveforms__['triangle'] = Numwave(self.__num_points__, 2 * np.pi, lambda x: (2 / np.pi) * np.arcsin(np.sin(x))).get_linspace(0, 1, 0)
         
         spiral = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: t*np.sin(a*t+b), lambda t,a,b,c: t*np.cos(a*t+c))
-        spiral.set_arange(0, 10)
+        spiral.set_arange(0.1, 4)
         spiral.set_brange(-np.pi/2,np.pi/2)
         spiral.set_crange(-np.pi/2,np.pi/2)
         self.__waveforms__['spiral'] = spiral
-        lissajous = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: a*np.sin(b*t+c), lambda t,a,b,c: a*np.sin(b*t))
-        lissajous.set_arange(1, 10)
-        lissajous.set_brange(1,10)
-        lissajous.set_crange(-np.pi/2,np.pi/2)
-        self.__waveforms__['lissajous'] = lissajous
+        #lissajous = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: a*np.sin(b*t+c), lambda t,a,b,c: a*np.sin(b*t))
+        #lissajous.set_arange(1, 10)
+        #lissajous.set_brange(1,10)
+        #lissajous.set_crange(-np.pi/2,np.pi/2)
+        #self.__waveforms__['lissajous'] = lissajous
+
+        celtic = Numwave(self.__num_points__,2*np.pi,lambda t,a,b,c:np.sin(a*t),lambda t,a,b,c:np.cos(b*t + c))
+        celtic.set_arange(1,10)
+        celtic.set_brange(1,10)
+        celtic.set_crange(-np.pi/2,np.pi/2)
+        self.__waveforms__['celtic'] = celtic
+
+        butterfly = Numwave(self.__num_points__,2*np.pi,lambda t,a,b,c:np.sin(a*t)*np.cos(b*t+np.pi/3),lambda t,a,b,c:np.cos(c*t))
+        butterfly.set_arange(1,5)
+        butterfly.set_brange(1,5)
+        butterfly.set_crange(1,5)
+        self.__waveforms__['butterfly'] = butterfly
+
 
       
 

@@ -1,11 +1,11 @@
 class Config:
-    __points_num__ = 500
-    __smoothing_alpha__ = 0.05
-    __radius__ = 10
-    __thickness__ = 1
-    __radband__ = 200
-    __thickband__ = 20
-    __spins__ = 3
+    __points_num__ = 720
+    __smoothing_alpha__ = 0.09
+    __radius__ = 200
+    __thickness__ = 10
+    __radband__ = 20
+    __thickband__ = 10
+    __spins__ = 2
 
     @property
     def points_num(self):
