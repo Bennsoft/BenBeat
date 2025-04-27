@@ -223,7 +223,8 @@ def main():
         
             if state == State.TICKING:
                 if t == 0:
-                    wavepick = np.random.randint(0,waves.get_waveformCount())
+                    choices=[4,5]
+                    wavepick = np.random.choice(choices)
                     numwave = waves.get_waveform_by_index(wavepick)
                     display_text = f" {waves.get_waveform_name(wavepick)} a {a} b {b} c{c}"
                     a=numwave.get_a(np.random.uniform(0,1))

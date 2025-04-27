@@ -53,9 +53,14 @@ class Waveform:
         superformula.set_crange(0.1, 10) # 'c' → shape tightness (sin part)
         self.__waveforms__['superformula'] = superformula
 
-
-
-
+        wobble_torus = Numwave(self.__num_points__, 2 * np.pi,
+        lambda t, a, b, c: (1 + 0.3 * np.cos(a * t + c)) * np.cos(t),
+        lambda t, a, b, c: (1 + 0.3 * np.sin(b * t + c)) * np.sin(t)
+        )
+        wobble_torus.set_arange(1, 10)  # 'a' wiggle amount
+        wobble_torus.set_brange(1, 10)  # 'b' wiggle amount
+        wobble_torus.set_crange(0, 2 * np.pi)  # 'c' phase
+        self.__waveforms__['wobble_torus'] = wobble_torus
       
 
     def get_waveform(self, name):
