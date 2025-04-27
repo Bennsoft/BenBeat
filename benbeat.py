@@ -105,11 +105,10 @@ def rotate_rgb(rgb, angle_degrees):
     # Scale back to 0-255 and return as ints
     return tuple(int(round(x * 255)) for x in (r_new, g_new, b_new))
 
-def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n):
+def draw_knot2(surface, center, color, rad, theta, thickness, base_waveform,n,colrot = 10):
     trange = np.linspace(rad - thickness // 2, rad + thickness // 2, thickness)
     center = np.array(center)
 
-    colrot=1
     for r in trange:
         col = rotate_rgb(color, r * colrot)
 
@@ -149,7 +148,7 @@ def main():
     c=0
     pulse_taget = 0
     firstpass = False
-
+    smoothing_alpha = 0.05
     pygame.init()
     WIDTH, HEIGHT = 1000, 800
     SENSITIVITY = 700
@@ -197,10 +196,15 @@ def main():
         mv.treble = treble
         mv.frequency = dominant_freq
     
-        smoothed_freq = (1 - config.smoothing_alpha) * smoothed_freq + config.smoothing_alpha * mv.frequency
-        smoothed_bass = (1 - config.smoothing_alpha) * smoothed_bass + config.smoothing_alpha * mv.bass
-        smoothed_mids = (1 - config.smoothing_alpha) * smoothed_mids + config.smoothing_alpha * mv.mids
-        smoothed_treble = (1 - config.smoothing_alpha) * smoothed_treble + config.smoothing_alpha * mv.treble
+        if state == State.PULSE:
+            smoothing_alpha = config.smoothing_alpha_pulse
+        else:
+            smoothing_alpha = config.smoothing_alpha
+
+        smoothed_freq = (1 - config.smoothing_alpha) * smoothed_freq + smoothing_alpha * mv.frequency
+        smoothed_bass = (1 - config.smoothing_alpha) * smoothed_bass + smoothing_alpha * mv.bass
+        smoothed_mids = (1 - config.smoothing_alpha) * smoothed_mids + smoothing_alpha * mv.mids
+        smoothed_treble = (1 - config.smoothing_alpha) * smoothed_treble + smoothing_alpha * mv.treble
 
   #      print(f"          freq{mv.frequency:.2f}  Hz, Bass: {mv.bass:.2f}, Mids: {mv.mids:.2f}, Treble: {mv.treble:.2f}")
    #     print(f"Smoooooth freq{smoothed_freq:.2f} Hz, Bass: {smoothed_bass:.2f}, Mids: {smoothed_mids:.2f}, Treble: {smoothed_treble:.2f}")

@@ -1,11 +1,12 @@
 class Config:
     __points_num__ = 720
-    __smoothing_alpha__ = 0.09
+    __smoothing_alpha__ = 0.1
     __radius__ = 200
     __thickness__ = 10
     __radband__ = 20
-    __thickband__ = 10
+    __thickband__ = 50
     __spins__ = 2
+    __smoothing_alpha_pulse__ = 0.01
 
     @property
     def points_num(self):
@@ -62,3 +63,11 @@ class Config:
     @thickband.setter
     def thickband(self, newval):
         self.__thickband__ = newval
+
+    @property
+    def smoothing_alpha_pulse(self):
+        return self.smoothing_alpha
+    
+    @smoothing_alpha_pulse.setter
+    def smoothing_alpha_pulse(self,newval):
+        self.smoothing_alpha_pulse = newval
