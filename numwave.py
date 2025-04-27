@@ -14,12 +14,15 @@ class Numwave:
     __cmin__ = 0
     __cmax__ = np.pi*2
 
-    def __init__(self, num_points,max,funcx,funcy):
+    __hollow__ = False
+
+    def __init__(self, num_points,max,funcx,funcy,hollow=True):
         self.__num_points__ = num_points
         self.__max__ = max
         self.__dots__ = np.linspace(0, self.__max__, self.__num_points__)
         self.__funcx__ = funcx
         self.__funcy__ = funcy
+        self.__hollow__ = hollow
 
     def get_linspace(self, a, b,c):
          t = np.linspace(0, self.__max__, self.__num_points__)
@@ -55,4 +58,8 @@ class Numwave:
         return self.__bmin__ + (self.__bmax__ - self.__bmin__) * input
     
     def get_c(self,input):
-        return self.__cmin__ + (self.__cmax__ - self.__cmin__) * input      
+        return self.__cmin__ + (self.__cmax__ - self.__cmin__) * input  
+
+    property
+    def hollow(self):
+        return self.__hollow__    

@@ -10,11 +10,13 @@ from numwave import Numwave
 import colorsys
 from enum import Enum
 import math
+from visual_mapping import VisualMapping
 
 class State(Enum):
     TICKING = 0
     SPINNING = 1
     PULSE = 2
+    CONNCENTIC = 3
   
 
 DEVICE_INDEX = 10  # Your Stereo Mix device
@@ -129,7 +131,12 @@ def unwrap_angle(angle_rad):
     return loops, current_angle
 
 
-
+mapping_a = VisualMapping('frequency', scale=5.0, offset=2.0, smoothing_alpha=0.05)
+mapping_b = VisualMapping('treble', scale=5.0, offset=1.0, smoothing_alpha=0.05)
+mapping_c = VisualMapping('mids', scale=5.0, offset=1.0, smoothing_alpha=0.05)
+mapping_knot_radius = VisualMapping('bass', scale=400.0, offset=100.0, smoothing_alpha=0.05)
+mapping_thickness = VisualMapping('treble', scale=30.0, offset=2.0, smoothing_alpha=0.1)
+mapping_tick_speed = VisualMapping('mids', scale=10.0, offset=0.0, smoothing_alpha=0.05)
 
 
 def main():
@@ -211,7 +218,7 @@ def main():
         circle_color = smoothed_bass*255, smoothed_mids*255, smoothed_treble*255
         if state == State.TICKING or state == State.SPINNING:
             t = int(tick_phase) % config.points_num
-            tick_speed =  smoothed_mids  # adjust constants to taste
+            tick_speed = mapping_tick_speed.update(mv)
             tick_phase+=tick_speed
             angular_speed = smoothed_bass*2
             rotation_angle += angular_speed
@@ -219,11 +226,11 @@ def main():
             
             complete_loops,current_rad_angle = unwrap_angle(np.radians(rotation_angle))
             if (state==State.TICKING or state == State.SPINNING):
-                knot_rad =  config.radius+(smoothed_bass*config.radband)
-        
+                knot_rad = mapping_knot_radius.update(mv)
+
             if state == State.TICKING:
                 if t == 0:
-                    choices=[4,5]
+                    choices=[3,4,5,6]
                     wavepick = np.random.choice(choices)
                     numwave = waves.get_waveform_by_index(wavepick)
                     display_text = f" {waves.get_waveform_name(wavepick)} a {a} b {b} c{c}"
@@ -247,9 +254,10 @@ def main():
             
 
         elif state == State.PULSE:                
-           a =numwave.get_a(smoothed_freq)
-           b = numwave.get_b(smoothed_treble)
-           c = numwave.get_c(smoothed_mids)
+           a = mapping_a.update(mv)
+           b = mapping_b.update(mv)
+           c = mapping_c.update(mv)
+
            knotform = numwave.get_linspace(a,b,c)
            timeval = config.__points_num__-1
            current_time = pygame.time.get_ticks()
@@ -264,7 +272,14 @@ def main():
                 text = font.render(display_text, True, (255, 255, 255))
                 text_rect = text.get_rect(topleft=(10, 10)) 
 
-        if timeval>2:
+        if numwave.hollow:
+            if timeval>2:
+                rads = np.linspace(1,knot_rad,4)
+                for r in rads:
+                    draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,r,current_rad_angle,thickness,knotform,timeval) 
+
+        else:
+            if timeval>2:
                 draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,current_rad_angle,thickness,knotform,timeval) 
         pygame.display.set_caption(f"Real-Time Music Visualizer - Loops: {complete_loops}")              
        
