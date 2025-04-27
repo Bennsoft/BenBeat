@@ -10,11 +10,13 @@ class Waveform:
         #self.__waveforms__['sawtooth'] = Numwave(self.__num_points__, 2 * np.pi, lambda x: (x / np.pi) - 1).get_linspace(0, 1, 0)
         #self.__waveforms__['triangle'] = Numwave(self.__num_points__, 2 * np.pi, lambda x: (2 / np.pi) * np.arcsin(np.sin(x))).get_linspace(0, 1, 0)
         
-        spiral = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: t*np.sin(a*t+b), lambda t,a,b,c: t*np.cos(a*t+c))
-        spiral.set_arange(0.1, 4)
-        spiral.set_brange(-np.pi/2,np.pi/2)
-        spiral.set_crange(-np.pi/2,np.pi/2)
-        self.__waveforms__['spiral'] = spiral
+        true_spiral = Numwave(self.__num_points__, 8 * np.pi, 
+        lambda t, a, b, c: a * t * np.cos(t),
+        lambda t, a, b, c: a * t * np.sin(t))
+        true_spiral.set_arange(0.05, 0.2)  # 'a' controls how spaced the spiral arms are
+        true_spiral.set_brange(0, 1)  # dummy
+        true_spiral.set_crange(0, 1)  # dummy
+        self.__waveforms__['true_spiral'] = true_spiral
         #lissajous = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: a*np.sin(b*t+c), lambda t,a,b,c: a*np.sin(b*t))
         #lissajous.set_arange(1, 10)
         #lissajous.set_brange(1,10)
@@ -33,7 +35,32 @@ class Waveform:
         butterfly.set_crange(1,5)
         self.__waveforms__['butterfly'] = butterfly
 
+        rose = Numwave(self.__num_points__, 2 * np.pi, 
+        lambda t, a, b, c: np.cos(a * t) * np.cos(t),
+        lambda t, a, b, c: np.cos(a * t) * np.sin(t))
+        rose.set_arange(1, 7)  # number of petals roughly
+        rose.set_brange(0, 1)  # unused here but needed for 3-arg interface
+        rose.set_crange(0, 1)  # unused
+        self.__waveforms__['rose'] = rose
 
+    
+        superformula = Numwave(self.__num_points__, 2 * np.pi,
+        lambda t, a, b, c: (np.abs(np.cos(a * t / 4)) ** b + np.abs(np.sin(a * t / 4)) ** c) ** (-1 / 1.0) * np.cos(t),
+        lambda t, a, b, c: (np.abs(np.cos(a * t / 4)) ** b + np.abs(np.sin(a * t / 4)) ** c) ** (-1 / 1.0) * np.sin(t)
+        )# Set parameter ranges (tune these to get different shape dynamics)
+        superformula.set_arange(2, 10)  # 'a' → affects the number of "petals"
+        superformula.set_brange(0.1, 10) # 'b' → shape tightness (cos part)
+        superformula.set_crange(0.1, 10) # 'c' → shape tightness (sin part)
+        self.__waveforms__['superformula'] = superformula
+
+        wobble_torus = Numwave(self.__num_points__, 2 * np.pi,
+        lambda t, a, b, c: (1 + 0.3 * np.cos(a * t + c)) * np.cos(t),
+        lambda t, a, b, c: (1 + 0.3 * np.sin(b * t + c)) * np.sin(t)
+        )
+        wobble_torus.set_arange(1, 10)  # 'a' wiggle amount
+        wobble_torus.set_brange(1, 10)  # 'b' wiggle amount
+        wobble_torus.set_crange(0, 2 * np.pi)  # 'c' phase
+        self.__waveforms__['wobble_torus'] = wobble_torus
       
 
     def get_waveform(self, name):
