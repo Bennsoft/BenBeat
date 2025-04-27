@@ -1,63 +1,40 @@
 import numpy as np
-
+from numwave import Numwave
 class Waveform:
     __waveforms__ = {}
         
     def __init__(self, num_points):
-        self.__dots__ = np.linspace(0, 2 * np.pi, num_points)
-        base_waveform = np.array([
-            [np.sin(7 * t), np.cos(5 * t + np.pi / 2)]
-            for t in self.__dots__ 
-        ])  
-        self.__waveforms__['celtic1'] = base_waveform
+        self.__num_points__ = num_points
+       # self.__waveforms__['sine'] = Numwave(self.__num_points__, 2 * np.pi, np.sin).get_linspace(0, 1, 0)
+        #self.__waveforms__['square'] = Numwave(self.__num_points__, 2 * np.pi, np.sign).get_linspace(0, 1, 0)
+        #self.__waveforms__['sawtooth'] = Numwave(self.__num_points__, 2 * np.pi, lambda x: (x / np.pi) - 1).get_linspace(0, 1, 0)
+        #self.__waveforms__['triangle'] = Numwave(self.__num_points__, 2 * np.pi, lambda x: (2 / np.pi) * np.arcsin(np.sin(x))).get_linspace(0, 1, 0)
+        
+        spiral = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: t*np.sin(a*t+b), lambda t,a,b,c: t*np.cos(a*t+c))
+        spiral.set_arange(0.1, 4)
+        spiral.set_brange(-np.pi/2,np.pi/2)
+        spiral.set_crange(-np.pi/2,np.pi/2)
+        self.__waveforms__['spiral'] = spiral
+        #lissajous = Numwave(self.__num_points__, 2 * np.pi, lambda t,a,b,c: a*np.sin(b*t+c), lambda t,a,b,c: a*np.sin(b*t))
+        #lissajous.set_arange(1, 10)
+        #lissajous.set_brange(1,10)
+        #lissajous.set_crange(-np.pi/2,np.pi/2)
+        #self.__waveforms__['lissajous'] = lissajous
 
-        base_waveform = np.array([
-           [np.sin(3 * t)*np.cos(2*t+np.pi/3), np.cos(4 * t)]
-          for t in self.__dots__
-        ])
-        self.__waveforms__['butterfly'] = base_waveform
+        celtic = Numwave(self.__num_points__,2*np.pi,lambda t,a,b,c:np.sin(a*t),lambda t,a,b,c:np.cos(b*t + c))
+        celtic.set_arange(1,10)
+        celtic.set_brange(1,10)
+        celtic.set_crange(-np.pi/2,np.pi/2)
+        self.__waveforms__['celtic'] = celtic
 
-        twisted_rose = np.array([
-        [np.sin(4 * t) * np.sin(t)**2, np.cos(6 * t + np.pi / 4) * np.cos(t)**2]
-            for t in self.__dots__
-        ])
-        self.__waveforms__['twistedrose'] = twisted_rose
+        butterfly = Numwave(self.__num_points__,2*np.pi,lambda t,a,b,c:np.sin(a*t)*np.cos(b*t+np.pi/3),lambda t,a,b,c:np.cos(c*t))
+        butterfly.set_arange(1,5)
+        butterfly.set_brange(1,5)
+        butterfly.set_crange(1,5)
+        self.__waveforms__['butterfly'] = butterfly
 
-        ellipse = np.array([
-            [np.sin(2*t), np.cos(t)]
-            for t in self.__dots__
-        ])
-        self.__waveforms__['ellipse'] = ellipse
 
-        Waveform = np.array([
-            [np.sin(5*t) - np.cos(2*t+np.pi), np.cos(t)+np.sin(3*t+np.pi/4)]
-            for t in self.__dots__
-        ])
-        self.__waveforms__['squiggle'] = Waveform
-
-        Waveform = np.array([
-            [t/3*(np.cos(t) + np.sin(2*t+np.pi/4))
-             ,t/3*(np.cos(2*t+np.pi/4) + np.sin(t))]
-            for t in self.__dots__
-        ])
-        self.__waveforms__['knot'] = Waveform
-        R=5
-        r=3
-        d=5
-        Waveform = np.array([
-            [(R-r)*np.cos(t)+d*np.cos(R-r)/r*t,
-             (R-r)*np.sin(t)-d*np.sin(R-r)/r*t]   
-            for t in self.__dots__        
-
-        ])
-        self.__waveforms__['hypotrochoid'] = Waveform
-
-        Waveform = np.array([
-            [t*np.cos(7*t),t*np.sin(7*t)]
-            for t in self.__dots__
-        ])
-        self.__waveforms__['spiral'] = Waveform
-    
+      
 
     def get_waveform(self, name):
         if name in self.__waveforms__:
@@ -65,7 +42,7 @@ class Waveform:
         else:
             raise ValueError(f"Waveform '{name}' not found. Available waveforms: {list(self.__waveforms__.keys())}")
 
-    def get_waveform_by_index(self,i:int):   
+    def get_waveform_by_index(self,i:int)->Numwave:  
         tick =0
         retform = None
         for w in self.__waveforms__:

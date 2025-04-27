@@ -6,6 +6,7 @@ import colorsys
 from musical_data import musicalData
 from musical_values import MusicalValues
 from waveform import Waveform 
+from numwave import Numwave
 import colorsys
 from enum import Enum
 import math
@@ -13,9 +14,10 @@ import math
 class State(Enum):
     TICKING = 0
     SPINNING = 1
+    PULSE = 2
   
 
-DEVICE_INDEX = 17  # Your Stereo Mix device
+DEVICE_INDEX = 10  # Your Stereo Mix device
 SAMPLERATE = 44100
 BLOCKSIZE = 1024
 md = musicalData(BLOCKSIZE)
@@ -134,6 +136,7 @@ def unwrap_angle(angle_rad):
 def main():
     config = Config()
     waves = Waveform(config.points_num)
+    numwave = None
     knotform = None
     tick_phase = 0
     rotation_angle =0
@@ -141,9 +144,14 @@ def main():
     angular_speed = 0
     rotation_target = 0
     display_text = ""
+    a=0
+    b=0
+    c=0
+    pulse_taget = 0
+    firstpass = False
 
     pygame.init()
-    WIDTH, HEIGHT = 800, 800
+    WIDTH, HEIGHT = 1000, 800
     SENSITIVITY = 700
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Real-Time Music Visualizer")
@@ -165,10 +173,10 @@ def main():
         device=DEVICE_INDEX
     )
     stream.start()
-    smoothed_freq = 0.0
-    smoothed_bass = 0.0
-    smoothed_mids = 0.0
-    smoothed_treble = 0.0
+    smoothed_freq = 0.5
+    smoothed_bass = 0.5
+    smoothed_mids = 0.5
+    smoothed_treble = 0.5
     
     state = State.TICKING
     # === Main Loop ===
@@ -196,59 +204,66 @@ def main():
 
   #      print(f"          freq{mv.frequency:.2f}  Hz, Bass: {mv.bass:.2f}, Mids: {mv.mids:.2f}, Treble: {mv.treble:.2f}")
    #     print(f"Smoooooth freq{smoothed_freq:.2f} Hz, Bass: {smoothed_bass:.2f}, Mids: {smoothed_mids:.2f}, Treble: {smoothed_treble:.2f}")
-        circle_color = frequency_to_hue(smoothed_freq)
-
-        t = int(tick_phase) % config.points_num
-        tick_speed =  smoothed_mids  # adjust constants to taste
-        tick_phase+=tick_speed
-        angular_speed = (smoothed_treble+smoothed_mids)*2
-        rotation_angle += angular_speed
-
-        knot_rad =  config.radius+(smoothed_bass*config.radband)
-        complete_loops,current_rad_angle = unwrap_angle(np.radians(rotation_angle))
-
-      
-        if state == State.TICKING:
-            if t == 0:
-                 r = np.random.randint(0,10)
-                 if (r>=5):
-                    w1 = np.random.randint(0,waves.get_waveformCount())
-                    w2 = np.random.randint(0,waves.get_waveformCount())
-                    if (w1==w2):
-                        knotform = waves.get_waveform_by_index(w1)
-                        display_text = waves.get_waveform_name(w1)
-                    else:
-                        blend = np.random.uniform(0,1)
-                        name1 = waves.get_waveform_name(w1)
-                        name2 = waves.get_waveform_name(w2)
-                        knotform = waves.get_waveform_blend(name1,name2,blend)
-                        display_text = f"{name1} --- {name2} -- {blend}"
-                 else:
-                    w1 = np.random.randint(0,waves.get_waveformCount())
-                    knotform = waves.get_waveform_by_index(w1)
-                    display_text = waves.get_waveform_name(w1)
-                 text = font.render(display_text, True, (255, 255, 255))
-                 text_rect = text.get_rect(topleft=(10, 10)) 
-            elif t == config.__points_num__-1:                
-                state = State.SPINNING
-                rotation_target = rotation_angle + config.spins*360
-        elif state == State.SPINNING:
-                if rotation_angle >= rotation_target:
-                    state = State.TICKING
-                    tick_phase = 0
+        circle_color = smoothed_bass*255, smoothed_mids*255, smoothed_treble*255
+        if state == State.TICKING or state == State.SPINNING:
+            t = int(tick_phase) % config.points_num
+            tick_speed =  smoothed_mids  # adjust constants to taste
+            tick_phase+=tick_speed
+            angular_speed = smoothed_bass*2
+            rotation_angle += angular_speed
 
             
+            complete_loops,current_rad_angle = unwrap_angle(np.radians(rotation_angle))
+            if (state==State.TICKING or state == State.SPINNING):
+                knot_rad =  config.radius+(smoothed_bass*config.radband)
+        
+            if state == State.TICKING:
+                if t == 0:
+                    wavepick = np.random.randint(0,waves.get_waveformCount())
+                    numwave = waves.get_waveform_by_index(wavepick)
+                    display_text = f" {waves.get_waveform_name(wavepick)} a {a} b {b} c{c}"
+                    a=numwave.get_a(np.random.uniform(0,1))
+                    b=numwave.get_b(np.random.uniform(0,1))
+                    c=numwave.get_c(np.random.uniform(0,1))
+                    knotform = numwave.get_linspace(a,b,c)
+                    text = font.render(display_text, True, (255, 255, 255))
+                    text_rect = text.get_rect(topleft=(10, 10)) 
+
+                elif t == config.__points_num__-1:                
+                    state = State.SPINNING
+                    rotation_target = rotation_angle + config.spins*360
+            elif state == State.SPINNING:
+                    if rotation_angle >= rotation_target:
+                        state = State.PULSE
+                        pulse_taget = pygame.time.get_ticks() + 20000
+
+            thickness = (int)(config.thickness+(smoothed_treble*config.thickband))
+            timeval = t if state == State.TICKING else config.__points_num__-1   
+            
+
+        elif state == State.PULSE:                
+           a =numwave.get_a(smoothed_freq)
+           b = numwave.get_b(smoothed_treble)
+           c = numwave.get_c(smoothed_mids)
+           knotform = numwave.get_linspace(a,b,c)
+           timeval = config.__points_num__-1
+           current_time = pygame.time.get_ticks()
            
+           if current_time >= pulse_taget:
+                state = State.TICKING
+                tick_phase = 0
+                rotation_angle = 0
+                complete_loops = 0
+           else:
+                display_text = f"Pulsing a {a} b {b} c {c}" 
+                text = font.render(display_text, True, (255, 255, 255))
+                text_rect = text.get_rect(topleft=(10, 10)) 
 
-
+        if timeval>2:
+                draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,current_rad_angle,thickness,knotform,timeval) 
         pygame.display.set_caption(f"Real-Time Music Visualizer - Loops: {complete_loops}")              
        
-        thickness = (int)(config.thickness+(smoothed_treble*config.thickband))
        
-        timeval = t if state == State.TICKING else config.__points_num__-1   
-        if timeval>2:
-            draw_knot2(screen,(WIDTH/2,HEIGHT/2), circle_color,knot_rad,current_rad_angle,thickness,knotform,timeval)
-
         screen.blit(text,text_rect)
         pygame.display.flip()
         clock.tick(60)
